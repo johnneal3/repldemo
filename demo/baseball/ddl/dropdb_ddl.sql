@@ -1,0 +1,5 @@
+
+DROP DATABASE  IF EXISTS `bballsrc`;
+DROP DATABASE  IF EXISTS `bballtrg`;
+
+

@@ -1,0 +1,7 @@
+#cloud-config
+#
+runcmd:
+   - mkdir /tmp/setup
+   - cd /tmp/setup
+   - git clone <my repository>
+   - ./setup.sh

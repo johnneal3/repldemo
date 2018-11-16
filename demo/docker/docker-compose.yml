@@ -1,0 +1,175 @@
+#
+# Quickly set up a demo environment that runs MySQL, Postgres, MemSQL,
+# Kafka (including the Schema Registry), and StreamSets Data Collector.
+#
+# Maintained by: John Neal
+#
+version: '3.0'
+services:
+##
+## run "portainer" ... a great tool for managing / monitoring a running docker environment.
+## Exposes port 9000 to the localhost. https://localhost:9000. Account: admin. You should be prompted to enter a password. I
+## suggest you use "admin". :-)
+##
+   portainer:
+      image: portainer/portainer
+      container_name: portainer
+      ports:
+         - 9000:9000
+      volumes:
+         - portainer-data:/data
+         - /var/run/docker.sock:/var/run/docker.sock
+##
+## Start MySQL. This will run on the replnet network. The database port will not be exposed to the host.
+## You will need to connect via the  ip address of the container. Hostname should be "mysqldb" and be
+## visible to the Replicate server. Database admin account: root/welcome1.
+##
+   mysql:
+      image: mysql:5.6
+      container_name: mysqldb
+      environment:
+         - MYSQL_ROOT_PASSWORD=welcome1
+      volumes:
+         - mysql-data:/var/lib/mysql/data
+      networks:
+         - replnet
+      command: mysqld --datadir=/var/lib/mysql --user=mysql --server-id=1 --log-bin=/var/lib/mysql/mysql-bin.log --binlog-format=ROW
+##
+## Start PostgreSQL. This will run on the replnet network. Database port will not be exposed directly on localhost.
+## You will need to connect via the ip address of the container. Hostname should be "postgresdb" and be visible
+## to the Replicate server. Database admin account: postgres/welcome1
+   postgres:
+      image: postgres:9.6
+      container_name: postgresdb
+      environment:
+         - POSTGRES_USER=postgres
+         - POSTGRES_PASSWORD=welcome1
+         - PGDATA=/var/lib/postgresql/data
+      volumes:
+         - postgres-data:/var/lib/postgresql
+      networks:
+         - replnet
+      command: -c wal_level=logical -c max_replication_slots=3 -c max_wal_senders=3 -c wal_sender_timeout=60s
+##
+## Run MemSQL. Ports are not exposed to localhost. You will need to connect to https://<container_IP_addr>:9000
+## to get the GUI up. Database admin user is "root". There is no password.
+##
+## More information here: https://docs.memsql.com/quickstarts/v6.0/quick-start-with-docker/
+##
+#   memsql:
+#      image: memsql/quickstart
+#      container_name: memsqldb
+#      networks:
+#         - replnet
+#
+##
+## run zookeeper. Needed for Kafka. Ports not exposed to localhost. Hostname should be "zkhost" and be visible to
+## the Replicate server.
+##
+   zookeeper:
+      image: confluentinc/cp-zookeeper:4.0.0
+      container_name: zkhost
+      environment:
+         - ZOOKEEPER_CLIENT_PORT=32181
+         - ZOOKEEPER_TICK_TIME=2000
+         - ZOOKEEPER_SYNC_LIMIT=2         
+         - ZOOKEEPER_SERVER_ID=1
+      networks:
+         - replnet
+##
+## run Kafka. Requires zookeeper to be running. Ports not exposed to locahost. Hostname should be "kafka" and
+## should be visible to the Replicate server.
+##
+   kafka:
+      image: confluentinc/cp-kafka:4.0.0
+      container_name: kafka
+      depends_on:
+         - zookeeper
+      environment:
+         - KAFKA_ZOOKEEPER_CONNECT=zkhost:32181
+         - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:29092
+         - KAFKA_BROKER_ID=1
+         - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      ports:
+         - 29092:29092
+      networks:
+         - replnet
+##
+## run the confluent schema registry. Requires zookeeper to be running. Hostname should be "sreghost" and
+## should be visible to the Replicate server.
+##
+   schema-registry:
+      image: confluentinc/cp-schema-registry:4.0.0
+      container_name: sreghost
+      depends_on:
+         - zookeeper
+         - kafka
+      environment:
+         - SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL=zkhost:32181
+         - SCHEMA_REGISTRY_HOST_NAME=sreghost
+         - SCHEMA_REGISTRY_LISTENERS=http://sreghost:8081
+         - SCHEMA_REGISTRY_DEBUG=true
+      ports:
+         - 8081:8081
+      networks:
+         - replnet
+##
+## run the Kafka REST proxy server
+##
+#   kafka-rest:
+#      image: confluentinc/cp-kafka-rest:4.0.0
+#      container_name: kafkarest
+#      depends_on:
+#         - schema-registry
+#      environment:
+#         - ACCESS_CONTROL_ALLOW_ORIGIN_DEFAULT="*"
+#         - KAFKA_REST_ZOOKEEPER_CONNECT=zkhost:32181
+#         - KAFKA_REST_LISTENERS=http://kafkarest:8082
+#         - KAFKA_REST_SCHEMA_REGISTRY_URL=http://sreghost:8081
+#         - KAFKA_REST_HOST_NAME=kafkarest
+#         - KAFKA_REST_DEBUG=true
+#         - KAFKA_REST_BOOTSTRAP_SERVERS=PLAINTEXT://kafka:29092
+#         - KAFKA_REST_CONSUMER_REQUEST_TIMEOUT_MS=30000
+#      ports:
+#         - 8082:8082
+#      networks:
+#         - replnet
+
+##
+## Container for running Cassandra. Plan is to use it for
+## delivery from a Kafka consumer
+##
+#   cassandra:
+#      image: cassandra
+#      container_name: cassandradb
+#      volumes:
+#         - cassandra-data:/var/lib/cassandra
+#      networks:
+#         - replnet
+
+##
+## Container for running StreamSets Data Collector with
+## required packages for endpoints
+##
+#   sdc:
+#      image: streamsets/datacollector:sdc
+#      build:
+#         context: ./sdc_images
+#      container_name: sdc
+#      volumes:
+#         - sdc-data:/var/lib/sdc/data
+#      networks:
+#         - replnet
+#      ports:
+#         - 18630:18630
+
+volumes:
+   postgres-data:
+   mysql-data:
+   portainer-data:
+#   sdc-data:
+#   cassandra-data:
+
+networks:
+   replnet:
+      driver: bridge
