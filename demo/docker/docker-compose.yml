@@ -31,6 +31,8 @@ services:
          - MYSQL_ROOT_PASSWORD=welcome1
       volumes:
          - mysql-data:/var/lib/mysql/data
+      ports:
+         - 3306:3306
       networks:
          - replnet
       command: mysqld --datadir=/var/lib/mysql --user=mysql --server-id=1 --log-bin=/var/lib/mysql/mysql-bin.log --binlog-format=ROW
@@ -47,6 +49,8 @@ services:
          - PGDATA=/var/lib/postgresql/data
       volumes:
          - postgres-data:/var/lib/postgresql
+      ports:
+         - 5432:5432
       networks:
          - replnet
       command: -c wal_level=logical -c max_replication_slots=3 -c max_wal_senders=3 -c wal_sender_timeout=60s
@@ -74,6 +78,8 @@ services:
          - ZOOKEEPER_TICK_TIME=2000
          - ZOOKEEPER_SYNC_LIMIT=2         
          - ZOOKEEPER_SERVER_ID=1
+      ports:
+         - 32181:32181
       networks:
          - replnet
 ##

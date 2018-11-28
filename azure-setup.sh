@@ -18,5 +18,6 @@ az vm create \
 
 #   --custom-data cloud-config.yml
 
-echo "opening port for replicate"
-az vm open-port --resource-group $RESOURCE_GROUP --name $VM --port 3552
+echo "opening port 3552 for replicate and 9000 for portainer"
+az vm open-port --resource-group $RESOURCE_GROUP --name $VM --port "3552 9000"
+

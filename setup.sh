@@ -351,6 +351,15 @@ usermod -a -G docker $DEMO_USER
 
 #create_odbcinst
 
+logit "setup.sh: starting docker"
+cd /home/$DEMO_USER/bin
+./docker-start.sh
+
+logit "setup.sh: running docker compose in detached mode"
+cd ../docker
+su -c "docker-compose up -d" $DEMO_USER 
+
+
 logit "setup.sh: setup is complete!"
 
 exit 0
