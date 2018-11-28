@@ -356,9 +356,12 @@ cd /home/$DEMO_USER/bin
 ./docker-start.sh
 
 logit "setup.sh: running docker compose in detached mode"
-cd ../docker
-su -c "docker-compose up -d" $DEMO_USER 
+su -c "cd /home/$DEMO_USER/docker; /usr/local/bin/docker-compose up -d" $DEMO_USER 
 
+logit "adding containers to /etc/hosts"
+cd 
+chmod 775 ./addhosts.sh
+./addhosts.sh
 
 logit "setup.sh: setup is complete!"
 
