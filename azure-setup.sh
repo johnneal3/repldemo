@@ -16,7 +16,7 @@ az vm create \
    --size Standard_D2s_v3 \
    --generate-ssh-keys
 
-#   --custom-data cloud-init.yml
+#   --custom-data cloud-config.yml
 
 echo "opening port for replicate"
 az vm open-port --resource-group $RESOURCE_GROUP --name $VM --port 3552

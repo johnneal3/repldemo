@@ -3,7 +3,7 @@
 # this script MUST be run as root or using sudo
 
 # PATH to where ancillary files that need to be copied reside
-SUPPORTING_FILES="/media/sf_data/workshop"
+SUPPORTING_FILES="."
 #
 REPL_INST_ENV="user=attunity group=attunity pass=admin verbose=true debug="
 REPL_RPM="https://attunity-patch.s3.amazonaws.com/_servicepacks/Replicate/6.2.0/sp05-6.2.0-Replicate/areplicate-6.2.0-284.x86_64.rpm"
