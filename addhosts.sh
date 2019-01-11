@@ -1,8 +1,4 @@
 #! /bin/bash
-#
-# add the hostname and IP address for each of the docker containers
-# to /etc/hosts.
-#
 
 addhosts() {
    # docker inspect --format='{{range .NetworkSettings.Networks}}{{.Aliases}} {{.IPAddress}}{{end}}' $1
@@ -10,8 +6,16 @@ addhosts() {
       | sed  's/\///'
 }
 
+# host addresses can change each time the docker images are started
+# so we need to remove old entries before we add new ones.
+cp /etc/hosts hosts.tmp
+grep -v repldemo hosts.tmp > /etc/hosts
+rm hosts.tmp
+
 for i in $(docker ps -a | grep -v CONTAINER | sed 's/ .*$//')
 do
-   echo $(addhosts $i) >>  /etc/hosts
+   echo "$(addhosts $i)       # docker repldemo"   >> /etc/hosts
 done
+
+exit 0
 

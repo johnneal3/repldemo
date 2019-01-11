@@ -21,7 +21,7 @@ ATTU_PASSWORD="welcome1"
 create_user() {
    if [ "$#" -ne 2 ]
    then
-      logit "Usage: ${FUNCNAME[0]} <username> <password>"
+      logerr "Usage: ${FUNCNAME[0]} <username> <password>"
       exit 1
    fi
    logit "$1"
@@ -41,7 +41,7 @@ create_user() {
 get_file() {
    if [ "$#" -ne 2 ]
    then
-      logit "Usage: ${FUNCNAME[0]} <remote_path> <local_path>"
+      logerr "Usage: ${FUNCNAME[0]} <remote_path> <local_path>"
       exit 1
    fi
    logit "curl -L $1 -o $2"
@@ -57,7 +57,7 @@ get_file() {
 install_replicate() {
    if [ "$#" -ne 2 ]
    then
-      logit "Usage: ${FUNCNAME[0]} <path_to_file> <install_env>"
+      logerr "Usage: ${FUNCNAME[0]} <path_to_file> <install_env>"
       exit 1
    fi
    logit "$1"
@@ -76,7 +76,7 @@ install_replicate() {
 install_other_utils() {
    if [ "$#" -ne 0 ]
    then
-      logit "Usage: ${FUNCNAME[0]}: too many arguments"
+      logerr "Usage: ${FUNCNAME[0]}: too many arguments"
       exit 1
    fi
    logit "installing"
@@ -93,7 +93,7 @@ install_other_utils() {
 install_db_clients() {
    if [ "$#" -ne 0 ]
    then
-      logit "Usage: ${FUNCNAME[0]}: too many arguments"
+      logerr "Usage: ${FUNCNAME[0]}: too many arguments"
       exit 1
    fi
    logit "Installing database clients"
@@ -101,8 +101,10 @@ install_db_clients() {
    logit "installing unixODBC"
    yum -y install unixODBC
    # install mysql client libraries
-   logit "Installing mysql"
+   logit "Installing mysql ODBC driver"
    yum -y install https://dev.mysql.com/get/Downloads/Connector-ODBC/5.3/mysql-connector-odbc-5.3.11-1.el7.x86_64.rpm 
+   logit "Installing mysql client"
+   yum -y install mysql
    # install postgres client libraries
    logit "Installing PostgreSQL client"
    yum -y install https://download.postgresql.org/pub/repos/yum/9.4/redhat/rhel-7-x86_64/pgdg-centos94-9.4-3.noarch.rpm
@@ -120,14 +122,14 @@ install_db_clients() {
 
    yum remove unixODBC-utf16 unixODBC-utf16-devel #to avoid conflicts
    ACCEPT_EULA=Y yum -y install msodbcsql
-   cd /opt/microsoft/msodbcsql/lib64 || logit "msodbcsql: /opt/microsoft/msodbcsql/lib64 directory not found"
+   cd /opt/microsoft/msodbcsql/lib64 || logerr "msodbcsql: /opt/microsoft/msodbcsql/lib64 directory not found"
    TFILE=$(ls libmsodbcsql-13.1.so.*)
    if [ "$TFILE" -ne "libmsodbcsql-13.1.so.0.0" ]
    then
-      logit "msodbcsql: linking $TFILE to libmsodbcsql-13.1.so.0.0"
+      logerr "msodbcsql: linking $TFILE to libmsodbcsql-13.1.so.0.0"
       ln -s "$TFILE" libmsodbcsql-13.1.so.0.0
    fi
-   cd - || logit "msodbcsql: unable to change to original directory"
+   cd - || logerr "msodbcsql: unable to change to original directory"
    add_to_ld_path "/opt/microsoft/msodbcsql/lib64/"
    # optional: for bcp and sqlcmd
    ACCEPT_EULA=Y yum -y install mssql-tools
@@ -145,7 +147,7 @@ install_db_clients() {
 install_docker() {
    if [ "$#" -ne 0 ]
    then
-      logit "Usage: ${FUNCNAME[0]}: too many arguments"
+      logerr "Usage: ${FUNCNAME[0]}: too many arguments"
       exit 1
    fi
    logit "Installing Docker"
@@ -173,7 +175,7 @@ install_docker() {
 install_compose_pip() {
    if [ "$#" -ne 0 ]
    then
-      logit "Usage: ${FUNCNAME[0]}: too many arguments"
+      logerr "Usage: ${FUNCNAME[0]}: too many arguments"
       exit 1
    fi
    logit "Installing docker-compose using pip"
@@ -201,7 +203,7 @@ install_compose_pip() {
 install_compose_curl() {
    if [ "$#" -ne 0 ]
    then
-      logit "Usage: ${FUNCNAME[0]}: too many arguments"
+      logerr "Usage: ${FUNCNAME[0]}: too many arguments"
       exit 1
    fi
    logit "Installing docker-compose using curl"
@@ -226,6 +228,17 @@ logit() {
    echo -e "${GREEN}***${NC}"
 }
 
+logerr() {
+   RED='\033[0;31m'
+   GREEN='\033[0;32m'
+   BLUE='\033[0;34m'
+   NC='\033[0m' # No Color
+
+   echo -e "${RED}***${NC}"
+   echo -e "${RED}*** ${FUNCNAME[1]}(): $* ${NC}"
+   echo -e "${RED}***${NC}"
+}
+
 # 
 # Create the /etc/odbcinst.ini file based on the drivers we have installed.
 #
@@ -234,7 +247,7 @@ logit() {
 create_odbcinst() {
    if [ "$#" -ne 0 ]
    then
-      logit "Usage: ${FUNCNAME[0]}: too many arguments"
+      logerr "Usage: ${FUNCNAME[0]}: too many arguments"
       exit 1
    fi
    logit "creating"
@@ -256,7 +269,7 @@ create_odbcinst() {
 add_to__path() {
    if [ "$#" -ne 1 ]
    then
-      logit "Usage: ${FUNCNAME[0]}: <data>"
+      logerr "Usage: ${FUNCNAME[0]}: <data>"
       exit 1
    fi
    logit "adding $1 to PATH"
@@ -276,7 +289,7 @@ add_to__path() {
 add_to_ld_path() {
    if [ "$#" -ne 1 ]
    then
-      logit "Usage: ${FUNCNAME[0]}: <data>"
+      logerr "Usage: ${FUNCNAME[0]}: <data>"
       exit 1
    fi
    logit "adding $1 to LD_LIBRARY_PATH"
@@ -285,6 +298,7 @@ add_to_ld_path() {
    echo "export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:$1\"" >> /home/$ATTU_USER/.bashrc
    # attunity service
    echo "export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:$1\"" >> /opt/attunity/replicate/bin/site_arep_login.sh
+   chmod 775 /opt/attunity/replicate/bin/site_arep_login.sh # make sure it is executable.
    # demo user
    echo "export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:$1\"" >> /home/$DEMO_USER/.bash_profile
    echo "export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:$1\"" >> /home/$DEMO_USER/.bashrc
@@ -298,18 +312,18 @@ add_to_ld_path() {
 copy_demo_files() {
    if [ "$#" -ne 0 ]
    then
-      logit "Usage: ${FUNCNAME[0]}: too many arguments"
+      logerr "Usage: ${FUNCNAME[0]}: too many arguments"
       exit 1
    fi
    logit "copying demo files"
    cp -R $SUPPORTING_FILES/demo/* /home/$DEMO_USER
    logit "changing ownership and permissions"
-   cd /home/$DEMO_USER || logit "unable to change to demo home directory"
+   cd /home/$DEMO_USER || logerr "unable to change to demo home directory"
    chown -R $DEMO_USER:$DEMO_USER ./*
    chmod -R o+r ./*
    chmod +x ./*
    chmod -R +x bin/* baseball/demo/*
-   cd - || logit "unable to change to original directory"
+   cd - || logerr "unable to change to original directory"
    logit "done"
 }
 
@@ -324,7 +338,7 @@ copy_demo_files() {
 #
 if [ "$(id -u)" -ne 0 ]
 then
-   logit "Usage: you must run this script as root/sudo"
+   logerr "Usage: you must run this script as root/sudo"
    exit 1
 fi
 
@@ -362,6 +376,12 @@ logit "adding containers to /etc/hosts"
 cd 
 chmod 775 ./addhosts.sh
 ./addhosts.sh
+
+logit "setup.sh: restarting replicate"
+cd /opt/attunity/replcate/bin
+./areplicate stop
+./areplicate start
+logit "setup.sh: replicate restarted"
 
 logit "setup.sh: setup is complete!"
 
